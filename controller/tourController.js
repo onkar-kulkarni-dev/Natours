@@ -54,6 +54,14 @@ exports.getAllTours = async (req, res) => {
       //default sorting by createdAt and in desc order(for desc order we use "-")
       query = query.sort("-createdAt");
     }
+
+    //3: Fields limit
+    if(req.query.fields){
+      const fields = req.query.fields.replace(/,/g, ' ');
+      query = query.select(fields)
+    } else { //default case if we want to remove some fields, we use "-" to remove fields
+      query = query.select('-__v')
+    }
     const tours = await query;
 
     res.status(200).json({
