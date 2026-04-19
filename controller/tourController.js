@@ -32,7 +32,13 @@ const Tour = require("../models/tourModel");
 
 exports.getAllTours = async (req, res) => {
   try {
-    const tours = await Tour.find();
+    const queryObj = { ...req.query };
+    const excludedParams = ["sort", "page", "fields", "limit"];
+    excludedParams.forEach((param) => delete queryObj[param]);
+    const query = Tour.find(queryObj);
+    //below way is risky here because we need dynamic filtering.
+    // const query = Tour.find().where('duration').equals(queryObj.duration).where('difficulty').equals(queryObj.difficulty)
+    const tours = await query;
     res.status(200).json({
       status: "success",
       statusCode: 200,
@@ -95,7 +101,7 @@ exports.createTour = async (req, res) => {
       tour: newTour,
     });
   } catch (err) {
-    console.log(err,"asd")
+    console.log(err, "asd");
     res.status(400).json({
       status: "fail",
       statusCode: 400,
