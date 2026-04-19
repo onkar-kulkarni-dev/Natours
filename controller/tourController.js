@@ -30,6 +30,12 @@ const Tour = require("../models/tourModel");
 //   next();
 // };
 
+exports.aliasTop5CheapTours = (req, res, next) => {
+  req.query.limit = 5;
+  req.query.sort = 'ratingsAverage price';
+  next()
+}
+
 exports.getAllTours = async (req, res) => {
   try {
     //1A: Filtering
