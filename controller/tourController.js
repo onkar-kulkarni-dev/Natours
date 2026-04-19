@@ -56,12 +56,27 @@ exports.getAllTours = async (req, res) => {
     }
 
     //3: Fields limit
-    if(req.query.fields){
-      const fields = req.query.fields.replace(/,/g, ' ');
-      query = query.select(fields)
-    } else { //default case if we want to remove some fields, we use "-" to remove fields
-      query = query.select('-__v')
+    if (req.query.fields) {
+      const fields = req.query.fields.replace(/,/g, " ");
+      query = query.select(fields);
+    } else {
+      //default case if we want to remove some fields, we use "-" to remove fields
+      query = query.select("-__v");
     }
+
+    //4: Pagination
+    const page = req.query.page * 1 || 1;
+    const limit = req.query.limit * 1 || 100;
+    const skip = (page - 1) * limit;
+
+    query = query.skip(skip).limit(limit);
+
+    if (page) {
+      const totalDocs = await Tour.countDocuments();
+      if (skip >= totalDocs) throw new Error("This page doesn't exists");
+    }
+
+    //Execute Query
     const tours = await query;
 
     res.status(200).json({
