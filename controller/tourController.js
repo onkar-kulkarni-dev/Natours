@@ -35,7 +35,10 @@ exports.getAllTours = async (req, res) => {
     const queryObj = { ...req.query };
     const excludedParams = ["sort", "page", "fields", "limit"];
     excludedParams.forEach((param) => delete queryObj[param]);
-    const query = Tour.find(queryObj);
+
+    let queryStr = JSON.stringify(queryObj);
+    queryStr = queryStr.replace(/\b(gt|gte|lt|lte)\b/g, (match) => `$${match}`);
+    const query = Tour.find(JSON.parse(queryStr));
     //below way is risky here because we need dynamic filtering.
     // const query = Tour.find().where('duration').equals(queryObj.duration).where('difficulty').equals(queryObj.difficulty)
     const tours = await query;
