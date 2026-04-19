@@ -32,16 +32,30 @@ const Tour = require("../models/tourModel");
 
 exports.getAllTours = async (req, res) => {
   try {
+    //1A: Filtering
     const queryObj = { ...req.query };
     const excludedParams = ["sort", "page", "fields", "limit"];
     excludedParams.forEach((param) => delete queryObj[param]);
 
+    //1B: Advanced Filtering
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(/\b(gt|gte|lt|lte)\b/g, (match) => `$${match}`);
-    const query = Tour.find(JSON.parse(queryStr));
+
+    let query = Tour.find(JSON.parse(queryStr));
     //below way is risky here because we need dynamic filtering.
     // const query = Tour.find().where('duration').equals(queryObj.duration).where('difficulty').equals(queryObj.difficulty)
+
+    //2: Sorting
+    if (req.query.sort) {
+      //this is for if there are matching records then we will use this, lets say we are doing sort by rice and 2 records has same price then we will pass ",averageRatings" so that then it will check for it and then send the response.
+      const sortBy = req.query.sort.replace(/,/g, " ");
+      query = query.sort(sortBy);
+    } else {
+      //default sorting by createdAt and in desc order(for desc order we use "-")
+      query = query.sort("-createdAt");
+    }
     const tours = await query;
+
     res.status(200).json({
       status: "success",
       statusCode: 200,
