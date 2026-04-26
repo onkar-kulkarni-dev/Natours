@@ -107,6 +107,12 @@ tourSchema.pre(/^find/, function () {
 //   console.log(`Query took ${Date.now() - this.start} milliseconds to execute`);
 // });
 
+//aggregate middleware
+
+tourSchema.pre("aggregate", function () {
+  this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+});
+
 const Tour = mongoose.model("Tour", tourSchema);
 
 module.exports = Tour;
