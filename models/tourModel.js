@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const slugify = require("slugify");
 
 const tourSchema = new mongoose.Schema(
   {
@@ -8,6 +9,7 @@ const tourSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
+    slug: String,
     duration: {
       type: Number,
       required: [true, "A tour must have duration"],
@@ -70,6 +72,19 @@ const tourSchema = new mongoose.Schema(
 tourSchema.virtual("durationOfWeeks").get(function () {
   return this.duration / 7;
 });
+
+//document middleware
+//this runs before save or create, and does not runs for findOne or findMany, update etc.
+//for example when we are creating new tour then automatically this attribute will get created and saved.
+tourSchema.pre("save", function () {
+  // console.log(this, "pre")
+  this.slug = slugify(this.name, { lower: true });
+});
+
+//below middleware will get called after save or create
+// tourSchema.post("save", function (){
+//   console.log(this,"post")
+// })
 
 const Tour = mongoose.model("Tour", tourSchema);
 
