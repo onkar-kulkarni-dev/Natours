@@ -61,6 +61,10 @@ const tourSchema = new mongoose.Schema(
       type: [Date],
       required: [true, "A tour must have start date"],
     },
+    secretTour: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     toJSON: { virtuals: true },
@@ -85,6 +89,23 @@ tourSchema.pre("save", function () {
 // tourSchema.post("save", function (){
 //   console.log(this,"post")
 // })
+
+//Query Middleware:
+//this query middleware will run after creating final query and before executing query.
+//the query type which we are passing here must match with the final query type which we are checking/creating in controller file.
+//for example if we are passing "find", then this middleware will just work for find and not for findOne, findMany, findIdAndUpdate etc.
+//to resolve this above issue we pass regular expression.
+
+// tourSchema.pre("find", function () {
+tourSchema.pre(/^find/, function () {
+  this.find({ secretTour: { $ne: true } });
+
+  this.start = Date.now();
+});
+
+// tourSchema.post(/^find/, function () {
+//   console.log(`Query took ${Date.now() - this.start} milliseconds to execute`);
+// });
 
 const Tour = mongoose.model("Tour", tourSchema);
 
