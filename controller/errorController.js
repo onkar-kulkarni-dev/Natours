@@ -5,6 +5,13 @@ const handleCastErrorDB = (err) => {
   return new AppError(message, 400);
 };
 
+const handleDuplicateRecordsDB = (err) => {
+  const value =
+    err?.errorResponse?.errmsg?.match(/(["'])(?:(?!\1).)*\1/)?.[0] || "";
+  const message = `Field value ${value} already exists!`;
+  return new AppError(message, 400);
+};
+
 const errorHandlerDev = (err, res) => {
   res.status(err.statusCode).json({
     status: err.status,
@@ -43,6 +50,7 @@ module.exports = (err, req, res, next) => {
   } else {
     let error = JSON.parse(JSON.stringify(err));
     if (error.name == "CastError") error = handleCastErrorDB(error);
+    if (error.errorResponse.code === 11000) error = handleDuplicateRecordsDB(error);
     errorHandlerProd(error, res);
   }
   next();
