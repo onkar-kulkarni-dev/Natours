@@ -1,6 +1,13 @@
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 
+//global sync uncaught exceptions, we need to write this at top level because if we keep this at bottom then before reaching to this block, app will crash from the execution block.
+process.on("uncaughtException", (err) => {
+  console.log(err, "uncaught exception");
+  //exiting the process with exit code 1 which means something is broken and 0 means success
+  process.exit(1); //here we pass either 0 or 1
+});
+
 dotenv.config({ path: "./config.env" });
 
 const app = require("./app");
