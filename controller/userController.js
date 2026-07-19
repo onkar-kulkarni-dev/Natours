@@ -1,9 +1,16 @@
-exports.getAllUsers = (req, res) => {
-  res.status(500).json({
-    status: "error",
-    message: "This path is yet to be defined!",
-  });
-};
+const Users = require('../models/userModel');
+const catchAsync = require("../utils/catchAsync");
+
+exports.getAllUsers = catchAsync(async (req, res, next) => {
+  const users = await Users.find();
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      users
+    }
+  })
+});
 
 exports.getUser = (req, res) => {
   res.status(500).json({
