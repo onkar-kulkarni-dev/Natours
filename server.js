@@ -1,4 +1,8 @@
 const mongoose = require("mongoose");
+const dns = require('dns');
+
+dns.setServers(['8.8.8.8', '1.1.1.1']);
+
 const dotenv = require("dotenv");
 
 //global sync uncaught exceptions, we need to write this at top level because if we keep this at bottom then before reaching to this block, app will crash from the execution block.
