@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
+const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema(
     {
@@ -24,10 +25,27 @@ const userSchema = new mongoose.Schema(
         },
         confirmPassword: {
             type: String,
-            required: true
+            required: [true, "Please enter confirm password"],
+            validate: {
+                validator: function (el) {
+                    return el === this.password;
+                },
+                message: 'Password not matching'
+            }
         }
     }
 );
+
+userSchema.pre('save', async function (next) {
+    if (!this.isModified("password")) return next();
+    //if password is modified then only we need to run this...
+
+    //hashing the password
+    this.password = await bcrypt.hash(this.password, 12);
+
+    //deleting confirmPassword field after encrypting password, no need to save this field in DB
+    this.confirmPassword = undefined;
+})
 
 const Users = mongoose.model("Users", userSchema);
 
