@@ -1,3 +1,4 @@
+const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const Users = require('../models/userModel');
 const catchAsync = require("../utils/catchAsync");
@@ -15,6 +16,7 @@ exports.signUp = catchAsync(async (req, res, next) => {
         email: req.body.email,
         password: req.body.password,
         confirmPassword: req.body.confirmPassword,
+        passwordChangedAt: req.body.passwordChangedAt
     });
 
     const token = tokenGenerator(newUser._id)
@@ -49,3 +51,28 @@ exports.login = catchAsync(async (req, res, next) => {
         token
     })
 });
+
+exports.protect = catchAsync(async (req, res, next) => {
+    let token;
+    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+        token = req.headers.authorization.split(' ')[1]
+    }
+    //1. check for the token, if token is not there then return it
+    if (!token) {
+        return next(new AppError('You are not authorized user, please login!', 401))
+    }
+    //2. check for token is valid
+    const tokenDetails = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+    //3. if token is valid, then check whether user exists or not
+    const userDetails = await Users.findById(tokenDetails.id);
+    if (!userDetails) {
+        return next(new AppError('User does not exists', 401))
+    }
+    //4. check if password is changed or not
+    if (userDetails.isPasswordChanged(tokenDetails.iat)) {
+        return next(new AppError('Password changed, please login again...', 401))
+    }
+    //granting the access
+    req.user =  userDetails;
+    next();
+})

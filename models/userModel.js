@@ -33,7 +33,8 @@ const userSchema = new mongoose.Schema(
                 },
                 message: 'Password not matching'
             }
-        }
+        },
+        passwordChangedAt: Date
     }
 );
 
@@ -51,6 +52,15 @@ userSchema.pre('save', async function (next) {
 //instance method is available for all documents, we can use below "correctPassword" method on all documents
 userSchema.methods.correctPassword = async function (userPassword, orgPassword) {
     return await bcrypt.compare(userPassword, orgPassword)
+}
+
+//another instance method - 
+userSchema.methods.isPasswordChanged = function (tokenCreatedTime) {
+    if (this.passwordChangedAt) {
+        const timeInSeconds = this.passwordChangedAt.getTime() / 1000;
+        return tokenCreatedTime < timeInSeconds
+    }
+    return false;
 }
 
 const Users = mongoose.model("Users", userSchema);
