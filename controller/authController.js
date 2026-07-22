@@ -16,7 +16,8 @@ exports.signUp = catchAsync(async (req, res, next) => {
         email: req.body.email,
         password: req.body.password,
         confirmPassword: req.body.confirmPassword,
-        passwordChangedAt: req.body.passwordChangedAt
+        passwordChangedAt: req.body.passwordChangedAt,
+        role: req.body.role
     });
 
     const token = tokenGenerator(newUser._id)
@@ -72,7 +73,16 @@ exports.protect = catchAsync(async (req, res, next) => {
     if (userDetails.isPasswordChanged(tokenDetails.iat)) {
         return next(new AppError('Password changed, please login again...', 401))
     }
-    //granting the access
-    req.user =  userDetails;
+    //granting the access, we are doing this for if next middleware wants this data then we can use it.
+    req.user = userDetails;
     next();
 })
+
+exports.restrictTo = (...args) => {
+    return (req, res, next) => {
+        if (!args.includes(req.user.role)) {
+            return next(new AppError('You do not have permission to perform this action', 403))
+        }
+        next();
+    }
+}
