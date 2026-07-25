@@ -42,7 +42,12 @@ const userSchema = new mongoose.Schema(
         },
         passwordChangedAt: Date,
         resetPasswordToken: String,
-        resetPasswordTokenExpiry: Date
+        resetPasswordTokenExpiry: Date,
+        isActive: {
+            type: Boolean,
+            default: true,
+            select: false
+        }
     }
 );
 
@@ -58,10 +63,15 @@ userSchema.pre('save', async function (next) {
     this.confirmPassword = undefined;
 })
 
-userSchema.pre('save', function(){
-    if(!(this.isModified('password')) || this.isNew) return ;
+userSchema.pre('save', function () {
+    if (!(this.isModified('password')) || this.isNew) return;
 
     this.passwordChangedAt = Date.now() - 1000;//subtracting 1 second here due to jwt token gets created immediately and after that it gets saved into DB
+})
+
+//filter in-active users
+userSchema.pre(/^find/, function () {
+    this.find({ isActive: true })
 })
 
 //instance method is available for all documents, we can use below "correctPassword" method on all documents

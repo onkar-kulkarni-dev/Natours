@@ -38,6 +38,15 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
   })
 })
 
+exports.deleteUserProfile = catchAsync(async (req, res, next) => {
+  await Users.findByIdAndUpdate(req.user._id, { isActive: false });
+
+  res.status(204).json({
+    status: "success",
+    data: null
+  })
+})
+
 exports.getUser = (req, res) => {
   res.status(500).json({
     status: "error",
