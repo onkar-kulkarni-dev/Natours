@@ -1,8 +1,10 @@
+const crypto = require('crypto');
 const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const Users = require('../models/userModel');
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const sendEmail = require("../utils/eMail");
 
 const tokenGenerator = id => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -86,3 +88,54 @@ exports.restrictTo = (...args) => {
         next();
     }
 }
+
+exports.forgotPassword = catchAsync(async (req, res, next) => {
+    //1. get user by email id
+    const user = await Users.findOne({ email: req.body.email });
+    if (!user) {
+        return next(new AppError('Email not found', 404));
+    }
+    //2.create reset token
+    const resetToken = user.createResetPasswordToken();
+    await user.save({ validateBeforeSave: false })
+    //3. send user email for reset link
+    const resetUrl = `${req.protocol}://${req.get(
+        'host'
+    )}/api/v1/users/resetPassword/${resetToken}`;
+    const message = `To reset your password open this link\n\n ${resetUrl}\n\nIf you did not forgot your password then please ignore this email`
+    try {
+        await sendEmail({
+            mailTo: user.email,
+            subject: 'Reset your password',
+            message
+        })
+        res.status(200).json({
+            status: 'success',
+            message: 'Mail sent to reset password!'
+        })
+    } catch (err) {
+        user.resetPasswordToken = undefined;
+        user.resetPasswordTokenExpiry = undefined;
+        await user.save({ validateBeforeSave: false });
+        return next(new AppError('Error while sending email. Try later again!', 500))
+    }
+})
+
+exports.resetPassword = catchAsync(async (req, res, next) => {
+    const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+    const user = await Users.findOne({ resetPasswordToken: hashedToken, resetPasswordTokenExpiry: { $gt: Date.now() } })
+    if (!user) {
+        return next(new AppError('Invalid user or token expired', 400))
+    }
+    user.password = req.body.password;
+    user.confirmPassword = req.body.confirmPassword;
+    //need to delete these 2 fields after resetting the password
+    user.resetPasswordToken = undefined;
+    user.resetPasswordTokenExpiry = undefined;
+    await user.save(); //here we need to run all the validators for checking password
+    const token = await tokenGenerator(user._id)
+    res.status(200).json({
+        status: 'success',
+        token
+    })
+})

@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
@@ -39,12 +40,15 @@ const userSchema = new mongoose.Schema(
                 message: 'Password not matching'
             }
         },
-        passwordChangedAt: Date
+        passwordChangedAt: Date,
+        resetPasswordToken: String,
+        resetPasswordTokenExpiry: Date
     }
 );
 
 userSchema.pre('save', async function (next) {
-    if (!this.isModified("password")) return next();
+    // if (!this.isModified("password")) return next(); check this issue when next() is there then getting error from forgotPassword middleware
+    if (!this.isModified("password")) return;
     //if password is modified then only we need to run this...
 
     //hashing the password
@@ -52,6 +56,12 @@ userSchema.pre('save', async function (next) {
 
     //deleting confirmPassword field after encrypting password, no need to save this field in DB
     this.confirmPassword = undefined;
+})
+
+userSchema.pre('save', function(){
+    if(!(this.isModified('password')) || this.isNew) return ;
+
+    this.passwordChangedAt = Date.now() - 1000;//subtracting 1 second here due to jwt token gets created immediately and after that it gets saved into DB
 })
 
 //instance method is available for all documents, we can use below "correctPassword" method on all documents
@@ -66,6 +76,16 @@ userSchema.methods.isPasswordChanged = function (tokenCreatedTime) {
         return tokenCreatedTime < timeInSeconds
     }
     return false;
+}
+
+userSchema.methods.createResetPasswordToken = function () {
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    this.resetPasswordTokenExpiry = Date.now() + 10 * 60 * 1000;
+
+    return resetToken;
 }
 
 const Users = mongoose.model("Users", userSchema);
