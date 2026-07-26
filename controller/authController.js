@@ -12,6 +12,15 @@ const tokenGenerator = id => {
     })
 }
 
+const sendCookie = (res, token) => {
+    const cookieOptions = {
+        expires: new Date(Date.now() + process.env.JWT_COOKIE_TOKEN_EXPIRES_IN * 24 * 60 * 60 * 1000),
+        httpOnly: true
+    }
+    if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
+    res.cookie('jwt', token, cookieOptions)
+}
+
 exports.signUp = catchAsync(async (req, res, next) => {
     const newUser = await Users.create({
         name: req.body.name,
@@ -23,6 +32,7 @@ exports.signUp = catchAsync(async (req, res, next) => {
     });
 
     const token = tokenGenerator(newUser._id)
+    sendCookie(res, token)
 
     res.status(201).json({
         status: "success",
@@ -48,6 +58,7 @@ exports.login = catchAsync(async (req, res, next) => {
     }
 
     const token = tokenGenerator(user._id)
+    sendCookie(res, token)
 
     res.status(200).json({
         status: "success",
@@ -134,6 +145,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     user.resetPasswordTokenExpiry = undefined;
     await user.save(); //here we need to run all the validators for checking password
     const token = await tokenGenerator(user._id)
+    sendCookie(res, token)
     res.status(200).json({
         status: 'success',
         token
@@ -149,7 +161,7 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
     userDetails.confirmPassword = req.body.confirmNewPassword;
     await userDetails.save();
     const token = await tokenGenerator(userDetails._id)
-
+    sendCookie(res, token)
     res.status(200).json({
         status: "success",
         message: "Password successfully updated",
