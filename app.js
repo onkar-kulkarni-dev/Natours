@@ -1,5 +1,6 @@
 const express = require("express");
 const morgan = require("morgan");
+const rateLimit = require('express-rate-limit');
 
 const AppError = require("./utils/appError");
 const globalErrorHandler = require('./controller/errorController');
@@ -8,10 +9,17 @@ const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 
-//middlewares
+//Global middlewares
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev")); //for logging
 }
+
+const limiter = rateLimit({
+  limit: 100,
+  windowMs: 60 * 60 * 1000
+})
+
+app.use('/api', limiter)
 
 app.use(express.json()); //for payload from client
 
